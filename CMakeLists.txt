@@ -1,7 +1,6 @@
 project(WebGLPoints)
 
 cmake_minimum_required(VERSION 3.5.1)
-option(JS_ONLY "Compiles to native JS (No WASM)" OFF)
 
 add_definitions(-std=c++11 -O3)
 
@@ -10,12 +9,6 @@ file(GLOB SOURCES src/*.cc)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/build")
 add_executable(a ${SOURCES})
 
-if(JS_ONLY)
-	message(STATUS "Setting compilation target to native JavaScript")
-	set(CMAKE_EXECUTABLE_SUFFIX ".js")
-	set_target_properties(a PROPERTIES LINK_FLAGS "-s MAX_WEBGL_VERSION=2 -s GL_ASSERTIONS -s WASM=0 -s EXPORTED_FUNCTIONS='[_main]'")
-else(JS_ONLY)
-	message(STATUS "Setting compilation target to WASM")
-	set(CMAKE_EXECUTABLE_SUFFIX ".wasm.js")
-	set_target_properties(a PROPERTIES LINK_FLAGS "-s MAX_WEBGL_VERSION=2 -s GL_ASSERTIONS -s WASM=1 -s EXPORTED_FUNCTIONS='[_main]'")
-endif(JS_ONLY)
+message(STATUS "Setting compilation target to WASM")
+set(CMAKE_EXECUTABLE_SUFFIX ".wasm.js")
+set_target_properties(a PROPERTIES LINK_FLAGS "-s MAX_WEBGL_VERSION=2 -s GL_ASSERTIONS -s WASM=1 -s EXPORTED_FUNCTIONS='[_main]'")
