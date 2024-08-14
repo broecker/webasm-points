@@ -5,6 +5,7 @@ cmake_minimum_required(VERSION 3.5.1)
 add_definitions(-std=c++11 -O3)
 
 file(GLOB SOURCES src/*.cc)
+include_directories(src)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/build")
 add_executable(a ${SOURCES})

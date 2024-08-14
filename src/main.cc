@@ -15,9 +15,7 @@
 #include <cstring>
 #include <cstdlib>
 
-#ifndef __EMSCRIPTEN__
-int fullscreen;
-#endif
+#include "shader.h"
 
 void onDisplay() {
 
@@ -47,7 +45,6 @@ int main(int argc, char** argv) {
 
   GLuint vbo;
   GLuint vao;
-  GLuint vertex_shader, fragment_shader;
   const GLfloat vertices[] = {
     /*
        x,    y,
@@ -72,79 +69,35 @@ int main(int argc, char** argv) {
 	#endif
 
   glEnable(GL_DEPTH_TEST);
-  {
-    const GLchar* str = "precision mediump float;\n"
-                        "attribute vec2 aPosition;\n"
-                        "varying vec2 vPosition;\n"
-                        "void main()\n"
-                        "{\n"
-                        "  gl_Position = vec4(aPosition, 0.0, 1.0);\n"
-                        "  vPosition = aPosition;\n"
-                        "}\n";
-    vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertex_shader, 1, &str, NULL);
-    glCompileShader(vertex_shader);
-    {
-      GLint params;
-      glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &params);
-      if (params == GL_FALSE) {
-        glGetShaderiv(vertex_shader, GL_INFO_LOG_LENGTH, &params);
-        GLchar* log = static_cast<GLchar*>(malloc(params));
-        glGetShaderInfoLog(vertex_shader, params, NULL, log);
-        printf("%s", log);
-        free(log);
-        glutDestroyWindow(win);
-        return EXIT_FAILURE;
+
+  const std::string vert_shader = R"(
+    precision mediump float;
+    attribute vec2 aPosition;
+    varying vec2 vPosition;
+  
+    void main() {
+      gl_Position = vec4(aPosition, 0.0, 1.0);
+      vPosition = aPosition;
+    }
+  )";
+  const std::string frag_shader = R"(
+    precision mediump float;
+    varying vec2 vPosition;
+  
+    void main() {
+      if (abs(vPosition.x) > 0.9 || abs(vPosition.y) > 0.9) {
+        gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+      } else {
+        gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0);
       }
     }
-  }
-  {
-    const GLchar* str = "precision mediump float;\n"
-                        "varying vec2 vPosition;\n"
-                        "void main()\n"
-                        "{\n"
-                        "  if (abs(vPosition.x) > 0.9 || abs(vPosition.y) > 0.9) {\n"
-                        "    gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
-                        "  } else {\n"
-                        "    gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0);\n"
-                        "  }\n"
-                        "}\n";
-    fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragment_shader, 1, &str, NULL);
-    glCompileShader(fragment_shader);
-    {
-      GLint params;
-      glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &params);
-      if (params == GL_FALSE) {
-        glGetShaderiv(fragment_shader, GL_INFO_LOG_LENGTH, &params);
-        GLchar* log = static_cast<GLchar*>(malloc(params));
-        glGetShaderInfoLog(fragment_shader, params, NULL, log);
-        printf("%s", log);
-        free(log);
-        glutDestroyWindow(win);
-        return EXIT_FAILURE;
-      }
-    }
-  }
-  GLuint program = glCreateProgram();
-  glAttachShader(program, vertex_shader);
-  glAttachShader(program, fragment_shader);
-  glBindAttribLocation(program, 0, "aPosition");
-  glLinkProgram(program);
-  {
-    GLint params;
-    glGetProgramiv(program, GL_LINK_STATUS, &params);
-    if (params == GL_FALSE) {
-      glGetProgramiv(program, GL_INFO_LOG_LENGTH, &params);
-      GLchar* log = static_cast<GLchar*>(malloc(params));
-      glGetProgramInfoLog(program, params, NULL, log);
-      printf("%s", log);
-      free(log);
-      glutDestroyWindow(win);
-      return EXIT_FAILURE;
-    }
-  }
-  glUseProgram(program);
+  )";
+  std::map<GLuint, std::string> attributeMap;
+  attributeMap[0] = "aPosition";
+
+  WebGLShader shader(vert_shader, frag_shader, attributeMap);
+  shader.bind();
+
   glGenBuffers(1, &vbo);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
   glBufferData(GL_ARRAY_BUFFER, sizeof vertices, vertices, GL_STATIC_DRAW);
